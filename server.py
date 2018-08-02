@@ -1,10 +1,14 @@
 import tornado
 import tornado.web
 import codec_pb2
-
+import os
 FileInfos = {}
 
 Blocks = {}
+
+if not os.path.exists("temp"):
+    os.mkdir("temp")
+
 def check( id ):
     if not id in FileInfos:
         return False
@@ -22,8 +26,15 @@ def writeToFile( id ):
     
     with open(fileinfo.name, "wb") as f:
         for i in range(fileinfo.BlockNum):
-            block = Blocks[id][i]
-            f.write(block.Data[:block.Size])
+            blockpath = Blocks[id][i]
+            with open(blockpath, "rb") as bf:
+                block = codec_pb2.Block()
+                block.ParseFromString(bf.read())
+                f.write(block.Data[:block.Size])
+            if os.path.exists(blockpath):
+                os.remove(blockpath)
+    del FileInfos[id]
+    del Blocks[id]
 
 class FileInfoHandle(tornado.web.RequestHandler):
 
@@ -52,9 +63,12 @@ class BlockHandle(tornado.web.RequestHandler):
         if block.IsInitialized():
             self.set_status(200)
             self.finish()
+            print (block.Seq)
             if not block.fileid in Blocks:
                 Blocks[block.fileid] = {}
-            Blocks[block.fileid][block.Seq] = block
+            Blocks[block.fileid][block.Seq] = "temp/" + block.fileid + str(block.Seq)
+            with open(Blocks[block.fileid][block.Seq], "wb") as f:
+                f.write(block.SerializeToString())
 
             if check(block.fileid):
                 writeToFile(block.fileid)

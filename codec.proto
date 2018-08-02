@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+message FileInfo {
+    required string id = 5;
+    required int32 BlockSize = 1;
+    required int32 BlockNum = 2;
+    required string name = 3;
+    optional string direc = 4;
+}
+
+message Block {
+    required string fileid = 4;
+    required int32 Seq = 1;
+    required bytes Data = 2;
+    required int32 Size = 3;
+}
